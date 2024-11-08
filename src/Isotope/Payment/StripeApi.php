@@ -6,10 +6,8 @@ namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
 use Contao\StringUtil;
 use Isotope\Interfaces\IsotopeProductCollection;
-use Isotope\Interfaces\IsotopePurchasableCollection;
 use Isotope\Model\Payment;
 use Isotope\Model\ProductCollection\Order;
-use Isotope\Module\Checkout;
 use Stripe\Checkout\Session;
 use Stripe\Customer;
 use Stripe\PaymentIntent;
