@@ -1,11 +1,7 @@
-<div id="isoPaymentStripeContainer">
-    <div id="vakanza-stripe-informationContainer">
-
-    </div>
-
-    <div id="vakanza-stripe-errorContainer"></div>
-    <div id="vakanza-stripe-successContainer"></div>
-    <div id="vakanza-stripe-button-container" data-clientsecret="<?= $this->clientSecret ?>"
+<div id="stripe-Container">
+    <div id="stripe-errorContainer"></div>
+    <div id="stripe-successContainer"></div>
+    <div id="stripe-button-container" data-clientsecret="<?= $this->clientSecret ?>"
          data-clientsession="<?= $this->clientSession ?>" data-bookingid="<?= $this->bookingUniqueId ?>"
          data-referenceid="<?= $this->referenceid ?>"
          data-publishablekey="<?= $this->stripePublicKey ?>"></div>

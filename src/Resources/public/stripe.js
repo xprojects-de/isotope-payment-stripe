@@ -1,6 +1,6 @@
 (function (window, document) {
 
-    function alpdeskReady(callback) {
+    function isoStripeReady(callback) {
         if (document.readyState !== 'loading') {
             callback();
         } else if (document.addEventListener) {
@@ -14,10 +14,10 @@
         }
     }
 
-    function processAlpdeskStripeResult(clientSession, bookingId, referenceId) {
+    function processIsoStripeResult(clientSession, bookingId, referenceId) {
 
-        const stripeErrorContainerElement = document.getElementById('vakanza-stripe-errorContainer');
-        const stripeSuccessContainerElement = document.getElementById('vakanza-stripe-successContainer');
+        const stripeErrorContainerElement = document.getElementById('stripe-errorContainer');
+        const stripeSuccessContainerElement = document.getElementById('stripe-successContainer');
 
         if (
             stripeErrorContainerElement !== undefined && stripeErrorContainerElement !== null &&
@@ -30,7 +30,7 @@
         }
 
         document.dispatchEvent(
-            new CustomEvent('alpdeskWidgetRequest', {
+            new CustomEvent('isoStripeEvent', {
                 detail: {
                     module: 'widgetPaymentStripe',
                     ab_type: 'event',
@@ -43,15 +43,15 @@
 
     }
 
-    alpdeskReady(function () {
+    isoStripeReady(function () {
 
-        document.addEventListener('alpdeskWidgetResponse', function (e) {
+        document.addEventListener('isoStripeEvent', function (e) {
 
             if (e.detail) {
 
-                const stripeContainerElement = document.getElementById('vakanza-stripe-button-container');
-                const stripeErrorContainerElement = document.getElementById('vakanza-stripe-errorContainer');
-                const stripeSuccessContainerElement = document.getElementById('vakanza-stripe-successContainer');
+                const stripeContainerElement = document.getElementById('stripe-button-container');
+                const stripeErrorContainerElement = document.getElementById('stripe-errorContainer');
+                const stripeSuccessContainerElement = document.getElementById('stripe-successContainer');
 
                 if (
                     stripeContainerElement !== undefined && stripeContainerElement !== null &&
@@ -84,7 +84,7 @@
 
         }, false);
 
-        const stripeContainerElement = document.getElementById('vakanza-stripe-button-container');
+        const stripeContainerElement = document.getElementById('stripe-button-container');
         if (stripeContainerElement !== undefined && stripeContainerElement !== null) {
 
             const clientSecret = stripeContainerElement.getAttribute('data-clientsecret');
@@ -103,10 +103,11 @@
                         return clientSecret;
                     };
 
-                    const handleComplete = async function () {
+                    const handleComplete = async function (e) {
 
                         //checkout.destroy()
-                        processAlpdeskStripeResult(clientSession, bookingId, referenceId);
+                        console.log(e);
+                        // processIsoStripeResult(clientSession, bookingId, referenceId);
 
                     }
 

@@ -1,4 +1,4 @@
-#isoPaymentStripeContainer {
+#stripe-Container {
     max-width: 600px;
     margin-left: auto;
     margin-right: auto;
@@ -12,7 +12,7 @@
     color: #333;
 }
 
-#isoPaymentStripeContainer h2 {
+#stripe-Container h2 {
     font-size: 20px;
     font-family: -apple-system, system-ui, Segoe UI, Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica Neue, sans-serif;
     font-weight: 400;
@@ -21,7 +21,7 @@
     text-transform: none;
 }
 
-#isoPaymentStripeContainer h3 {
+#stripe-Container h3 {
     font-size: 17px;
     font-family: -apple-system, system-ui, Segoe UI, Roboto, Oxygen-Sans, Ubuntu, Cantarell, Helvetica Neue, sans-serif;
     font-weight: 400;

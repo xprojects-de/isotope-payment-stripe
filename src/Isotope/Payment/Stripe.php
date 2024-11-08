@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
 use Contao\Module;
+use Contao\StringUtil;
 use Contao\System;
 use Haste\Util\Url;
 use Isotope\Interfaces\IsotopeProductCollection;
@@ -27,6 +28,11 @@ class Stripe extends StripeApi
         return parent::isAvailable();
     }
 
+    /**
+     * @param IsotopeProductCollection $objOrder
+     * @param Module $objModule
+     * @return string
+     */
     public function checkoutForm(IsotopeProductCollection $objOrder, Module $objModule): string
     {
         if (!$objOrder instanceof IsotopePurchasableCollection) {
@@ -38,6 +44,7 @@ class Stripe extends StripeApi
 
         try {
 
+            $GLOBALS['TL_JAVASCRIPT'][] = StringUtil::decodeEntities('https://js.stripe.com/v3/');
             $GLOBALS['TL_JAVASCRIPT'][] = 'bundles/alpdeskisotopestripe/stripe.js';
             $GLOBALS['TL_CSS'][] = 'bundles/alpdeskisotopestripe/stripe.css|static';
 
