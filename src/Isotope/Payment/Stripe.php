@@ -75,7 +75,7 @@ class Stripe extends StripeApi
                 $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
                 $referenceId
-            );;
+            );
 
             $template = new Template('iso_payment_stripe');
             $template->setData($this->arrData);

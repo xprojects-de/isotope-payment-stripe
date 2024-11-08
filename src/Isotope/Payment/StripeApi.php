@@ -8,6 +8,7 @@ use Contao\StringUtil;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Interfaces\IsotopePurchasableCollection;
 use Isotope\Model\Payment;
+use Isotope\Model\ProductCollection\Order;
 use Isotope\Module\Checkout;
 use Stripe\Checkout\Session;
 use Stripe\Customer;
@@ -286,6 +287,29 @@ abstract class StripeApi extends Payment
 
         return $data;
 
+    }
+
+    /**
+     * @param $orderId
+     * @return string
+     */
+    public function backendInterface($orderId): string
+    {
+        if (($objOrder = Order::findByPk($orderId)) === null) {
+            return parent::backendInterface($orderId);
+        }
+
+        $arrPayment = StringUtil::deserialize($objOrder->payment_data, true);
+
+        if (!\is_string($arrPayment['STRIPE_PAYMENT_INTENT']) || empty($arrPayment['STRIPE_PAYMENT_INTENT'])) {
+            return parent::backendInterface($orderId);
+        }
+
+        $strBuffer = '<div id="tl_buttons"></div>';
+        $strBuffer .= '<h2 class="sub_headline">' . $this->name . ' (' . $GLOBALS['TL_LANG']['MODEL']['tl_iso_payment'][$this->type][0] . ')' . '</h2>';
+        $strBuffer .= '<div id="tl_soverview"><div id="tl_message"><div class="tl_info">Payment-Ident: ' . $arrPayment['STRIPE_PAYMENT_INTENT'] . '</div></div></div>';
+
+        return $strBuffer;
     }
 
 }
