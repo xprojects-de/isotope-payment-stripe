@@ -1,6 +1,5 @@
 <div id="stripe-Container">
     <div id="stripe-errorContainer"></div>
-    <div id="stripe-successContainer"></div>
     <div id="stripe-button-container"></div>
 </div>
 
