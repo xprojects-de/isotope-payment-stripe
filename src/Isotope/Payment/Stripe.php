@@ -73,7 +73,7 @@ class Stripe extends StripeApi
                 'iso_order_' . $objOrder->getId(),
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
-                Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
+                Checkout::generateUrlForStep(Checkout::STEP_PROCESS, $objOrder, null, true),
                 $referenceId
             );
 

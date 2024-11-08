@@ -226,6 +226,9 @@ abstract class StripeApi extends Payment
 
             $this->updateCustomerInformation($stripe, $session, $referenceId, $customerInfo);
 
+            // @TODO Check paymentStatus if unpaid
+            $paymentStatus = $session->payment_status;
+
             $paymentIntent = $session->payment_intent;
             if (\is_string($paymentIntent)) {
                 return $paymentIntent;
