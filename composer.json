@@ -1,0 +1,52 @@
+{
+  "name": "alpdesk/isotope-payment-stripe",
+  "description": "Stripe payment for Contao Isotope Ecommerce",
+  "keywords": [
+    "contao",
+    "isotope",
+    "payment",
+    "stripe"
+  ],
+  "type": "contao-bundle",
+  "version": "0.0.1",
+  "license": "MIT",
+  "require": {
+    "php": "^8.1",
+    "contao/core-bundle": "^4.13",
+    "isotope/isotope-core": "^2.0",
+    "stripe/stripe-php": "^v16.2.0"
+  },
+  "authors": [
+    {
+      "name": "Alpdesk",
+      "homepage": "https://alpdesk.de",
+      "email": "info@alpdesk.de",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Alpdesk\\IsotopeStripe\\": "src/"
+    }
+  },
+  "extra": {
+    "contao-manager-plugin": "Alpdesk\\IsotopeStripe\\ContaoManager\\Plugin",
+    "contao-component-dir": "public"
+  },
+  "config": {
+    "contao-component-dir": "public",
+    "allow-plugins": true
+  },
+  "require-dev": {
+    "roave/security-advisories": "dev-latest",
+    "contao/manager-bundle": "^4.13",
+    "contao/manager-plugin": "^2.0",
+    "contao/conflicts": "@dev",
+    "phpstan/phpstan": "^1.0",
+    "phpstan/phpstan-phpunit": "^1.0",
+    "phpstan/phpstan-symfony": "^1.0",
+    "slam/phpstan-extensions": "^6.0",
+    "phpunit/phpunit": "^9.5",
+    "symfony/phpunit-bridge": "^5.4 || ^6.4"
+  }
+}
