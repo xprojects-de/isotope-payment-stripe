@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
+use Contao\StringUtil;
+use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Interfaces\IsotopePurchasableCollection;
 use Isotope\Model\Payment;
 use Isotope\Module\Checkout;
@@ -66,7 +68,7 @@ abstract class StripeApi extends Payment
      * @return array
      * @throws \Exception
      */
-    private function createOrder(
+    public function createOrder(
         ?string $name,
         float   $amount,
         string  $currency,
@@ -148,15 +150,13 @@ abstract class StripeApi extends Payment
      * @param Session $session
      * @param string|null $referenceId
      * @param array|null $customerInfo
-     * @param string|null $bookingNumber
      * @return void
      */
     private function updateCustomerInformation(
         StripeClient $stripe,
         Session      $session,
         ?string      $referenceId,
-        ?array       $customerInfo,
-        ?string      $bookingNumber
+        ?array       $customerInfo
     ): void
     {
         try {
@@ -189,7 +189,6 @@ abstract class StripeApi extends Payment
                     Customer::update($customer->id, [
                         'metadata' => [
                             'referenceId' => $referenceId,
-                            'lastBookingNumber' => ($bookingNumber ?? ''),
                             'firstName' => ($customerInfo['firstName'] ?? ''),
                             'lastName' => ($customerInfo['lastName'] ?? ''),
                             'email' => ($customerInfo['email'] ?? '')
@@ -209,16 +208,13 @@ abstract class StripeApi extends Payment
      * @param string $clientSession
      * @param string|null $referenceId
      * @param array|null $customerInfo
-     * @param string|null $bookingNumber
-     * @return array
-     * @throws \Exception
+     * @return string|null
      */
-    private function captureOrder(
+    public function captureOrder(
         string  $clientSession,
         ?string $referenceId,
-        ?array  $customerInfo,
-        ?string $bookingNumber
-    ): array
+        ?array  $customerInfo
+    ): ?string
     {
         try {
 
@@ -229,42 +225,44 @@ abstract class StripeApi extends Payment
                 throw new \Exception('invalid ResultSession');
             }
 
-            $this->updateCustomerInformation($stripe, $session, $referenceId, $customerInfo, $bookingNumber);
-
-            $amount = (float)($session->amount_total / 100);
+            $this->updateCustomerInformation($stripe, $session, $referenceId, $customerInfo);
 
             $paymentIntent = $session->payment_intent;
             if (\is_string($paymentIntent)) {
-                return [$amount, $paymentIntent];
+                return $paymentIntent;
             }
 
             if ($paymentIntent instanceof PaymentIntent) {
-                return [$amount, $paymentIntent->id];
+                return $paymentIntent->id;
             }
 
-            throw new \Exception('invalid ResultSession');
+        } catch (\Throwable) {
 
-        } catch (\Throwable $tr) {
-            throw new \Exception($tr->getMessage());
         }
+
+        return null;
 
     }
 
-
     /**
-     * @param IsotopePurchasableCollection $order
-     * @return array
-     * @throws \Exception
+     * @param IsotopeProductCollection $collection
+     * @param string $clientSession
+     * @param string $paymentIntent
+     * @return void
      */
-    public function createPayment(IsotopePurchasableCollection $order): array
+    protected function storePaymentIntent(
+        IsotopeProductCollection $collection,
+        string                   $clientSession,
+        string                   $paymentIntent
+    ): void
     {
-        return $this->createOrder(
-            'iso_order_' . $order->getId(),
-            $order->getTotal(), // number_format($order->getTotal(), 2)
-            $order->getCurrency(),
-            Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $order, null, true),
-            'iso_address_' . $order->getBillingAddress()->id
-        );
+        $paymentData = StringUtil::deserialize($collection->payment_data, true);
+
+        $paymentData['STRIPE_PAYMENT_SESSION'] = $clientSession;
+        $paymentData['STRIPE_PAYMENT_INTENT'] = $paymentIntent;
+
+        $collection->payment_data = $paymentData;
+        $collection->save();
 
     }
 

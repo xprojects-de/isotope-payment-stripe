@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
+use Contao\Input;
 use Contao\Module;
 use Contao\StringUtil;
 use Contao\System;
@@ -42,27 +43,50 @@ class Stripe extends StripeApi
 
         }
 
+        $referenceId = 'iso_address_' . $objOrder->getBillingAddress()->id;
+
+        $isoClientSession = Input::get('iso_clientSession');
+        if (is_string($isoClientSession) && $isoClientSession !== '') {
+
+            $customerInfoObject = [
+                'firstName' => $objOrder->getBillingAddress()->firstname,
+                'lastName' => $objOrder->getBillingAddress()->lastname,
+                'email' => $objOrder->getBillingAddress()->email
+            ];
+
+            $completeOrderId = $this->captureOrder($isoClientSession, $referenceId, $customerInfoObject);
+            if (is_string($completeOrderId)) {
+
+                $this->storePaymentIntent($objOrder, $completeOrderId, $isoClientSession);
+                Checkout::redirectToStep(Checkout::STEP_COMPLETE, $objOrder);
+
+            }
+
+        }
+
         try {
 
             $GLOBALS['TL_JAVASCRIPT'][] = StringUtil::decodeEntities('https://js.stripe.com/v3/');
-            $GLOBALS['TL_JAVASCRIPT'][] = 'bundles/alpdeskisotopestripe/stripe.js';
             $GLOBALS['TL_CSS'][] = 'bundles/alpdeskisotopestripe/stripe.css|static';
 
-            [$clientSecret, $clientSession] = $this->createPayment($objOrder);
+            [$clientSecret, $clientSession] = $this->createOrder(
+                'iso_order_' . $objOrder->getId(),
+                $objOrder->getTotal(), // number_format($order->getTotal(), 2)
+                $objOrder->getCurrency(),
+                Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
+                $referenceId
+            );;
 
             $template = new Template('iso_payment_stripe');
             $template->setData($this->arrData);
 
             $template->clientSecret = $clientSecret;
             $template->clientSession = $clientSession;
-            $template->bookingUniqueId = $objOrder->getId();
-            $template->referenceid = $objOrder->getId();
             $template->stripePublicKey = $this->stripePublicKey;
 
-            $successUrl = Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true);
-            $successUrl = Url::addQueryString('paymentID=__paymentID__', $successUrl);
-            $successUrl = Url::addQueryString('payerID=__payerID__', $successUrl);
-            $template->success_url = $successUrl;
+            $processUrl = Checkout::generateUrlForStep(Checkout::STEP_PROCESS, $objOrder, null, true);
+            $processUrl = Url::addQueryString('iso_clientSession=' . $clientSession, $processUrl);
+            $template->processUrl = $processUrl;
 
             $template->cancel_url = Checkout::generateUrlForStep(Checkout::STEP_FAILED, null, null, true);
 

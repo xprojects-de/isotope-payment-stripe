@@ -1,8 +1,56 @@
 <div id="stripe-Container">
     <div id="stripe-errorContainer"></div>
     <div id="stripe-successContainer"></div>
-    <div id="stripe-button-container" data-clientsecret="<?= $this->clientSecret ?>"
-         data-clientsession="<?= $this->clientSession ?>" data-bookingid="<?= $this->bookingUniqueId ?>"
-         data-referenceid="<?= $this->referenceid ?>"
-         data-publishablekey="<?= $this->stripePublicKey ?>"></div>
+    <div id="stripe-button-container"></div>
 </div>
+
+<script>
+
+    (function (window, document) {
+
+        function isoStripeReady(callback) {
+            if (document.readyState !== 'loading') {
+                callback();
+            } else if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', callback);
+            } else {
+                document.attachEvent('onreadystatechange', function () {
+                    if (document.readyState === 'complete') {
+                        callback();
+                    }
+                });
+            }
+        }
+
+        isoStripeReady(function () {
+
+            const stripeContainerElement = document.getElementById('stripe-button-container');
+            if (stripeContainerElement !== undefined && stripeContainerElement !== null) {
+
+                initialize().then();
+
+                async function initialize() {
+
+                    const fetchClientSecret = async () => {
+                        return '<?= $this->clientSecret ?>';
+                    };
+
+                    const handleComplete = async function () {
+                        window.location.href = '<?= $this->processUrl ?>';
+                    }
+
+                    const checkout = await Stripe('<?= $this->stripePublicKey ?>').initEmbeddedCheckout({
+                        fetchClientSecret,
+                        onComplete: handleComplete
+                    });
+
+                    checkout.mount(stripeContainerElement);
+
+                }
+
+            }
+
+        }, false);
+    })(window, document);
+
+</script>
