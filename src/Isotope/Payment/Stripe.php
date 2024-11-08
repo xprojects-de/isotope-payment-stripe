@@ -101,7 +101,11 @@ class Stripe extends StripeApi
 
     }
 
-
+    /**
+     * @param IsotopeProductCollection $objOrder
+     * @param Module $objModule
+     * @return bool
+     */
     public function processPayment(IsotopeProductCollection $objOrder, Module $objModule): bool
     {
         if (!$objOrder instanceof IsotopePurchasableCollection) {
@@ -111,31 +115,18 @@ class Stripe extends StripeApi
 
         }
 
-        /*$paypalData = $this->retrievePayment($objOrder);
-
-        if (0 === \count($paypalData)
-            || Input::get('paymentID') !== $paypalData['id']
-            || 'created' !== $paypalData['state']
-        ) {
-            return false;
-        }
-
-        try {
-            $response = $this->executePayment($paypalData['id'], Input::get('payerID'));
-        } catch (TransportExceptionInterface $e) {
-            return false;
-        }
-
-        if (200 !== $response->getStatusCode()) {
+        $intentData = $this->retrievePaymentIntent($objOrder);
+        if (!array_key_exists('STRIPE_PAYMENT_INTENT', $intentData)) {
             return false;
         }
 
         $objOrder->checkout();
         $objOrder->setDatePaid(time());
         $objOrder->updateOrderStatus($this->new_order_status);
-        $objOrder->save();*/
+        $objOrder->save();
 
         return true;
 
     }
+
 }

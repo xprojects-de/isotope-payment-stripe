@@ -266,4 +266,26 @@ abstract class StripeApi extends Payment
 
     }
 
+    /**
+     * @param IsotopeProductCollection $collection
+     * @return array
+     */
+    protected function retrievePaymentIntent(IsotopeProductCollection $collection): array
+    {
+        $paymentData = StringUtil::deserialize($collection->payment_data, true);
+
+        $data = [];
+
+        if (\array_key_exists('STRIPE_PAYMENT_SESSION', $paymentData)) {
+            $data['STRIPE_PAYMENT_SESSION'] = $paymentData['STRIPE_PAYMENT_SESSION'];
+        }
+
+        if (\array_key_exists('STRIPE_PAYMENT_INTENT', $paymentData)) {
+            $data['STRIPE_PAYMENT_INTENT'] = $paymentData['STRIPE_PAYMENT_INTENT'];
+        }
+
+        return $data;
+
+    }
+
 }
