@@ -131,6 +131,7 @@ class Stripe extends StripeApi
         $objOrder->checkout();
         $objOrder->setDatePaid(time());
         $objOrder->updateOrderStatus($this->new_order_status);
+
         $objOrder->save();
 
         return true;
