@@ -17,6 +17,8 @@ use Stripe\Stripe as StripeStripe;
 
 abstract class StripeApi extends Payment
 {
+    public static string $STRIPE_JS = 'https://js.stripe.com/v3/';
+
     /**
      * @param StripeClient $stripe
      * @param string|null $clientReferenceId

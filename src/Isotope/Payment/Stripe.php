@@ -61,7 +61,7 @@ class Stripe extends StripeApi
             $template = new Template('iso_payment_stripe');
             $template->setData($this->arrData);
 
-            $template->stripeJsUrl = StringUtil::decodeEntities('https://js.stripe.com/v3/');
+            $template->stripeJsUrl = StringUtil::decodeEntities(StripeApi::$STRIPE_JS);
             $template->clientSecret = $clientSecret;
             $template->clientSession = $clientSession;
             $template->stripePublicKey = $this->stripePublicKey;
