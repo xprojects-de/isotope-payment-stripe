@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
 use Contao\StringUtil;
+use Contao\System;
+use Hashids\Hashids;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Model\Payment;
 use Isotope\Model\ProductCollection\Order;
@@ -67,7 +69,7 @@ abstract class StripeApi extends Payment
      * @return array
      * @throws \Exception
      */
-    public function createOrder(
+    protected function createOrder(
         ?string $name,
         float   $amount,
         string  $currency,
@@ -77,8 +79,8 @@ abstract class StripeApi extends Payment
     {
         try {
 
-            if (!\is_string($name) || $name === '') {
-                $name = 'iso_order_' . \time();
+            if (!is_string($name) || $name === '') {
+                $name = '' . time();
             }
 
             $amountInt = (int)($amount * 100);
@@ -102,7 +104,7 @@ abstract class StripeApi extends Payment
                 'return_url' => $redirectUrl
             ];
 
-            if (\is_string($clientReferenceId) && $clientReferenceId !== '') {
+            if (is_string($clientReferenceId) && $clientReferenceId !== '') {
 
                 $options['saved_payment_method_options'] = ['payment_method_save' => 'enabled'];
 
@@ -193,7 +195,7 @@ abstract class StripeApi extends Payment
      * @param array|null $customerInfo
      * @return string|null
      */
-    public function captureOrder(
+    protected function captureOrder(
         string  $clientSession,
         ?string $clientReferenceId,
         ?array  $customerInfo
@@ -284,6 +286,25 @@ abstract class StripeApi extends Payment
         $strBuffer .= '<div id="tl_soverview"><div id="tl_message"><div class="tl_info">Payment-Ident: ' . ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? '') . '</div></div></div>';
 
         return $strBuffer;
+
+    }
+
+    /**
+     * @param int $id
+     * @return string
+     */
+    protected function generateHash(int $id): string
+    {
+        try {
+
+            $secret = System::getContainer()->getParameter('kernel.secret');
+            return (new Hashids($secret, 8, 'abcdefghijkmnopqrstuvwxyz'))->encode($id);
+
+        } catch (\Throwable) {
+
+        }
+
+        return '' . time();
 
     }
 

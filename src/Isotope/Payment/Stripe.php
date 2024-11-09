@@ -46,7 +46,7 @@ class Stripe extends StripeApi
             $clientReferenceId = 'iso_address_' . $objOrder->getBillingAddress()->id;
 
             [$clientSecret, $clientSession] = $this->createOrder(
-                'iso_order_' . $objOrder->getId(),
+                '#' . $this->generateHash($objOrder->getId()),
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
