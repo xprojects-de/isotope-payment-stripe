@@ -1,4 +1,7 @@
 <div id="stripe-Container">
+    <div id="stripe-cancel">
+        <a href="<?= $this->cancelUrl ?>"><?= $this->labelBack ?></a>
+    </div>
     <div id="stripe-widget-container"></div>
 </div>
 

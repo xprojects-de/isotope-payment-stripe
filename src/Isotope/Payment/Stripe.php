@@ -66,6 +66,8 @@ class Stripe extends StripeApi
             $template->clientSession = $clientSession;
             $template->stripePublicKey = $this->stripePublicKey;
             $template->completeUrl = Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true);
+            $template->cancelUrl = Checkout::generateUrlForStep(Checkout::STEP_FAILED, null, null, true);
+            $template->labelBack = $GLOBALS['TL_LANG']['MSC']['stripe_isotope']['back'];
 
             return $template->parse();
 
