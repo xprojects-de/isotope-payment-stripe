@@ -7,7 +7,6 @@ namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 use Contao\Module;
 use Contao\StringUtil;
 use Contao\System;
-use Haste\Util\Url;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Interfaces\IsotopePurchasableCollection;
 use Isotope\Isotope;
