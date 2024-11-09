@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
-use Contao\Input;
 use Contao\Module;
 use Contao\StringUtil;
 use Contao\System;
@@ -43,52 +42,36 @@ class Stripe extends StripeApi
 
         }
 
-        $referenceId = 'iso_address_' . $objOrder->getBillingAddress()->id;
-
-        $isoClientSession = Input::get('iso_clientSession');
-        if (is_string($isoClientSession) && $isoClientSession !== '') {
-
-            $customerInfoObject = [
-                'firstName' => $objOrder->getBillingAddress()->firstname,
-                'lastName' => $objOrder->getBillingAddress()->lastname,
-                'email' => $objOrder->getBillingAddress()->email
-            ];
-
-            $completeOrderId = $this->captureOrder($isoClientSession, $referenceId, $customerInfoObject);
-            if (is_string($completeOrderId)) {
-
-                $this->storePaymentIntent($objOrder, $completeOrderId, $isoClientSession);
-                Checkout::redirectToStep(Checkout::STEP_COMPLETE, $objOrder);
-
-            }
-
-        }
-
         try {
 
-            $GLOBALS['TL_JAVASCRIPT'][] = StringUtil::decodeEntities('https://js.stripe.com/v3/');
-            $GLOBALS['TL_CSS'][] = 'bundles/alpdeskisotopestripe/stripe.css|static';
+            $clientReferenceId = 'iso_address_' . $objOrder->getBillingAddress()->id;
 
             [$clientSecret, $clientSession] = $this->createOrder(
                 'iso_order_' . $objOrder->getId(),
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
-                Checkout::generateUrlForStep(Checkout::STEP_PROCESS, $objOrder, null, true),
-                $referenceId
+                Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
+                $clientReferenceId
             );
+
+            $this->storePaymentData($objOrder, [
+                'clientSession' => $clientSession,
+                'clientReferenceId' => $clientReferenceId
+            ]);
 
             $template = new Template('iso_payment_stripe');
             $template->setData($this->arrData);
 
+            $template->stripeJsUrl = StringUtil::decodeEntities('https://js.stripe.com/v3/');
             $template->clientSecret = $clientSecret;
             $template->clientSession = $clientSession;
             $template->stripePublicKey = $this->stripePublicKey;
 
-            $processUrl = Checkout::generateUrlForStep(Checkout::STEP_PROCESS, $objOrder, null, true);
-            $processUrl = Url::addQueryString('iso_clientSession=' . $clientSession, $processUrl);
-            $template->processUrl = $processUrl;
+            $completeUrl = Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true);
+            // $completeUrl = Url::addQueryString('iso_clientSession=' . $clientSession, $completeUrl);
+            $template->completeUrl = $completeUrl;
 
-            $template->cancel_url = Checkout::generateUrlForStep(Checkout::STEP_FAILED, null, null, true);
+            // $template->cancel_url = Checkout::generateUrlForStep(Checkout::STEP_FAILED, null, null, true);
 
             return $template->parse();
 
@@ -115,10 +98,34 @@ class Stripe extends StripeApi
 
         }
 
-        $intentData = $this->retrievePaymentIntent($objOrder);
-        if (!array_key_exists('STRIPE_PAYMENT_INTENT', $intentData)) {
+        $paymentData = $this->retrievePaymentData($objOrder);
+
+        if (
+            !array_key_exists('clientSession', $paymentData) ||
+            !is_string($paymentData['clientSession']) || $paymentData['clientSession'] === ''
+        ) {
             return false;
         }
+
+        $clientSession = $paymentData['clientSession'];
+        $clientReferenceId = ($paymentData['clientReferenceId'] ?? null);
+
+        $customerInfoObject = [
+            'firstName' => $objOrder->getBillingAddress()->firstname,
+            'lastName' => $objOrder->getBillingAddress()->lastname,
+            'email' => $objOrder->getBillingAddress()->email
+        ];
+
+        $paymentIntent = $this->captureOrder($clientSession, $clientReferenceId, $customerInfoObject);
+        if (!is_string($paymentIntent) || $paymentIntent === '') {
+
+            $this->storePaymentData($objOrder, []);
+            return false;
+
+        }
+
+        $paymentData['paymentIntent'] = $paymentIntent;
+        $this->storePaymentData($objOrder, $paymentData);
 
         $objOrder->checkout();
         $objOrder->setDatePaid(time());

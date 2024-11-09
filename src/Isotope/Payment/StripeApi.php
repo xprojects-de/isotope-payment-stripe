@@ -19,34 +19,32 @@ abstract class StripeApi extends Payment
 {
     /**
      * @param StripeClient $stripe
-     * @param string|null $orderReference
+     * @param string|null $clientReferenceId
      * @return string|null
      */
-    private function getCustomerIdByOrderReference(
+    private function getCustomerIdByClientReference(
         StripeClient $stripe,
-        ?string      $orderReference
+        ?string      $clientReferenceId
     ): ?string
     {
         try {
 
-            if ($orderReference === null) {
+            if ($clientReferenceId === null) {
                 return null;
             }
 
             $customerSearch = $stripe->customers->search([
-                'query' => 'metadata[\'referenceId\']:\'' . $orderReference . '\'',
+                'query' => 'metadata[\'clientReferenceId\']:\'' . $clientReferenceId . '\'',
             ]);
 
-            if ($customerSearch instanceof SearchResult) {
+            if (
+                $customerSearch instanceof SearchResult &&
+                $customerSearch->count() > 0
+            ) {
+                $customer = $customerSearch->first();
 
-                if ($customerSearch->count() > 0) {
-
-                    $customer = $customerSearch->first();
-
-                    if ($customer instanceof Customer) {
-                        return $customer->id;
-                    }
-
+                if ($customer instanceof Customer) {
+                    return $customer->id;
                 }
 
             }
@@ -62,8 +60,8 @@ abstract class StripeApi extends Payment
      * @param string|null $name
      * @param float $amount
      * @param string $currency
-     * @param string|null $redirectUrl
-     * @param string|null $orderReference
+     * @param string $redirectUrl
+     * @param string|null $clientReferenceId
      * @return array
      * @throws \Exception
      */
@@ -71,8 +69,8 @@ abstract class StripeApi extends Payment
         ?string $name,
         float   $amount,
         string  $currency,
-        ?string $redirectUrl,
-        ?string $orderReference
+        string  $redirectUrl,
+        ?string $clientReferenceId
     ): array
     {
         try {
@@ -98,31 +96,15 @@ abstract class StripeApi extends Payment
                     'quantity' => 1,
                 ]],
                 'mode' => 'payment',
-                'redirect_on_completion' => 'never'
+                'redirect_on_completion' => 'if_required',
+                'return_url' => $redirectUrl
             ];
 
-            if (\is_string($redirectUrl) && \trim($redirectUrl) !== '') {
-
-                $explodePattern = '?';
-                if (\str_contains($redirectUrl, '?')) {
-                    $explodePattern = '&';
-                }
-
-                $options['redirect_on_completion'] = 'if_required';
-
-                if (\is_string($orderReference) && $orderReference !== '') {
-                    $options['return_url'] = \trim($redirectUrl) . $explodePattern . 'iso_order_reference=' . $orderReference . '&iso_clientSession={CHECKOUT_SESSION_ID}';
-                } else {
-                    $options['return_url'] = \trim($redirectUrl) . $explodePattern . 'iso_clientSession={CHECKOUT_SESSION_ID}';
-                }
-
-            }
-
-            if (\is_string($orderReference) && $orderReference !== '') {
+            if (\is_string($clientReferenceId) && $clientReferenceId !== '') {
 
                 $options['saved_payment_method_options'] = ['payment_method_save' => 'enabled'];
 
-                $currentCustomerId = $this->getCustomerIdByOrderReference($stripe, $orderReference);
+                $currentCustomerId = $this->getCustomerIdByClientReference($stripe, $clientReferenceId);
                 if ($currentCustomerId !== null) {
                     $options['customer'] = $currentCustomerId;
                 } else {
@@ -147,20 +129,20 @@ abstract class StripeApi extends Payment
     /**
      * @param StripeClient $stripe
      * @param Session $session
-     * @param string|null $referenceId
+     * @param string|null $clientReferenceId
      * @param array|null $customerInfo
      * @return void
      */
     private function updateCustomerInformation(
         StripeClient $stripe,
         Session      $session,
-        ?string      $referenceId,
+        ?string      $clientReferenceId,
         ?array       $customerInfo
     ): void
     {
         try {
 
-            if ($referenceId === null) {
+            if ($clientReferenceId === null) {
                 return;
             }
 
@@ -176,8 +158,8 @@ abstract class StripeApi extends Payment
                 $metadata = $customer->metadata->toArray();
                 if (
                     \is_array($metadata) &&
-                    \array_key_exists('referenceId', $metadata) &&
-                    $metadata['referenceId'] === $referenceId
+                    \array_key_exists('clientReferenceId', $metadata) &&
+                    $metadata['clientReferenceId'] === $clientReferenceId
                 ) {
                     $update = false;
                 }
@@ -187,7 +169,7 @@ abstract class StripeApi extends Payment
                     StripeStripe::setApiKey($this->stripePrivateKey);
                     Customer::update($customer->id, [
                         'metadata' => [
-                            'referenceId' => $referenceId,
+                            'clientReferenceId' => $clientReferenceId,
                             'firstName' => ($customerInfo['firstName'] ?? ''),
                             'lastName' => ($customerInfo['lastName'] ?? ''),
                             'email' => ($customerInfo['email'] ?? '')
@@ -205,13 +187,13 @@ abstract class StripeApi extends Payment
 
     /**
      * @param string $clientSession
-     * @param string|null $referenceId
+     * @param string|null $clientReferenceId
      * @param array|null $customerInfo
      * @return string|null
      */
     public function captureOrder(
         string  $clientSession,
-        ?string $referenceId,
+        ?string $clientReferenceId,
         ?array  $customerInfo
     ): ?string
     {
@@ -224,7 +206,7 @@ abstract class StripeApi extends Payment
                 throw new \Exception('invalid ResultSession');
             }
 
-            $this->updateCustomerInformation($stripe, $session, $referenceId, $customerInfo);
+            $this->updateCustomerInformation($stripe, $session, $clientReferenceId, $customerInfo);
 
             // @TODO Check paymentStatus if unpaid
             $paymentStatus = $session->payment_status;
@@ -248,22 +230,19 @@ abstract class StripeApi extends Payment
 
     /**
      * @param IsotopeProductCollection $collection
-     * @param string $clientSession
-     * @param string $paymentIntent
+     * @param array $stripeData
      * @return void
      */
-    protected function storePaymentIntent(
+    protected function storePaymentData(
         IsotopeProductCollection $collection,
-        string                   $clientSession,
-        string                   $paymentIntent
+        array                    $stripeData
     ): void
     {
         $paymentData = StringUtil::deserialize($collection->payment_data, true);
 
-        $paymentData['STRIPE_PAYMENT_SESSION'] = $clientSession;
-        $paymentData['STRIPE_PAYMENT_INTENT'] = $paymentIntent;
-
+        $paymentData['STRIPE_PAYMENT'] = $stripeData;
         $collection->payment_data = $paymentData;
+
         $collection->save();
 
     }
@@ -272,21 +251,10 @@ abstract class StripeApi extends Payment
      * @param IsotopeProductCollection $collection
      * @return array
      */
-    protected function retrievePaymentIntent(IsotopeProductCollection $collection): array
+    protected function retrievePaymentData(IsotopeProductCollection $collection): array
     {
         $paymentData = StringUtil::deserialize($collection->payment_data, true);
-
-        $data = [];
-
-        if (\array_key_exists('STRIPE_PAYMENT_SESSION', $paymentData)) {
-            $data['STRIPE_PAYMENT_SESSION'] = $paymentData['STRIPE_PAYMENT_SESSION'];
-        }
-
-        if (\array_key_exists('STRIPE_PAYMENT_INTENT', $paymentData)) {
-            $data['STRIPE_PAYMENT_INTENT'] = $paymentData['STRIPE_PAYMENT_INTENT'];
-        }
-
-        return $data;
+        return \array_key_exists('STRIPE_PAYMENT', $paymentData) ? $paymentData['STRIPE_PAYMENT'] : [];
 
     }
 
@@ -302,15 +270,19 @@ abstract class StripeApi extends Payment
 
         $arrPayment = StringUtil::deserialize($objOrder->payment_data, true);
 
-        if (!\is_string($arrPayment['STRIPE_PAYMENT_INTENT']) || empty($arrPayment['STRIPE_PAYMENT_INTENT'])) {
+        if (
+            !isset($arrPayment['STRIPE_PAYMENT']) ||
+            !is_array($arrPayment['STRIPE_PAYMENT'])
+        ) {
             return parent::backendInterface($orderId);
         }
 
         $strBuffer = '<div id="tl_buttons"></div>';
         $strBuffer .= '<h2 class="sub_headline">' . $this->name . ' (' . $GLOBALS['TL_LANG']['MODEL']['tl_iso_payment'][$this->type][0] . ')' . '</h2>';
-        $strBuffer .= '<div id="tl_soverview"><div id="tl_message"><div class="tl_info">Payment-Ident: ' . $arrPayment['STRIPE_PAYMENT_INTENT'] . '</div></div></div>';
+        $strBuffer .= '<div id="tl_soverview"><div id="tl_message"><div class="tl_info">Payment-Ident: ' . ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? '') . '</div></div></div>';
 
         return $strBuffer;
+
     }
 
 }

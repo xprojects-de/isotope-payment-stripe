@@ -1,8 +1,8 @@
 <div id="stripe-Container">
-    <div id="stripe-errorContainer"></div>
-    <div id="stripe-button-container"></div>
+    <div id="stripe-widget-container"></div>
 </div>
 
+<script src="<?= $this->stripeJsUrl ?>"></script>
 <script>
 
     (function (window, document) {
@@ -23,7 +23,7 @@
 
         isoStripeReady(function () {
 
-            const stripeContainerElement = document.getElementById('stripe-button-container');
+            const stripeContainerElement = document.getElementById('stripe-widget-container');
             if (stripeContainerElement !== undefined && stripeContainerElement !== null) {
 
                 initialize().then();
@@ -35,7 +35,7 @@
                     };
 
                     const handleComplete = async function () {
-                        window.location.href = '<?= $this->processUrl ?>';
+                        window.location.href = '<?= $this->completeUrl ?>';
                     }
 
                     const checkout = await Stripe('<?= $this->stripePublicKey ?>').initEmbeddedCheckout({
