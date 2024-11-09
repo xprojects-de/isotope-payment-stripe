@@ -203,6 +203,30 @@ abstract class StripeApi extends Payment
     {
         try {
 
+            $validStatus = [
+                Session::STATUS_COMPLETE
+            ];
+
+            if (is_string($this->stripeWhitelistStatus)) {
+
+                $additionalValidStatus = StringUtil::deserialize($this->stripeWhitelistStatus);
+                if (is_array($additionalValidStatus) && count($additionalValidStatus) > 0) {
+                    $validStatus = array_merge($validStatus, $additionalValidStatus);
+                }
+            }
+
+            $validPaymentStatus = [
+                Session::PAYMENT_STATUS_PAID
+            ];
+
+            if (is_string($this->stripeWhitelistPaymentStatus)) {
+
+                $additionalValidPaymentStatus = StringUtil::deserialize($this->stripeWhitelistPaymentStatus);
+                if (is_array($additionalValidPaymentStatus) && count($additionalValidPaymentStatus) > 0) {
+                    $validPaymentStatus = array_merge($validPaymentStatus, $additionalValidPaymentStatus);
+                }
+            }
+
             $stripe = new StripeClient($this->stripePrivateKey);
 
             $session = $stripe->checkout->sessions->retrieve($clientSession);
@@ -210,10 +234,25 @@ abstract class StripeApi extends Payment
                 throw new \Exception('invalid ResultSession');
             }
 
-            $this->updateCustomerInformation($stripe, $session, $clientReferenceId, $customerInfo);
+            $status = $session->status;
 
-            // @TODO Check paymentStatus if unpaid
+            if (
+                !\is_string($status) ||
+                !\in_array($status, $validStatus, true)
+            ) {
+                throw new \Exception('invalid status');
+            }
+
             $paymentStatus = $session->payment_status;
+
+            if (
+                !\is_string($paymentStatus) ||
+                !\in_array($paymentStatus, $validPaymentStatus, true)
+            ) {
+                throw new \Exception('invalid payment status');
+            }
+
+            $this->updateCustomerInformation($stripe, $session, $clientReferenceId, $customerInfo);
 
             $paymentIntent = $session->payment_intent;
             if (is_string($paymentIntent)) {

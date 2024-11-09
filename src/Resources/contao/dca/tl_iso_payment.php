@@ -18,6 +18,28 @@ $GLOBALS['TL_DCA']['tl_iso_payment']['fields'] = array_merge($GLOBALS['TL_DCA'][
         'inputType' => 'text',
         'eval' => ['mandatory' => true, 'maxlength' => 255, 'tl_class' => 'w50'],
         'sql' => "varchar(255) NOT NULL default ''",
+    ],
+    'stripeWhitelistStatus' => [
+        'label' => &$GLOBALS['TL_LANG']['tl_iso_payment']['stripeWhitelistStatus'],
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'options' => [
+            \Stripe\Checkout\Session::STATUS_EXPIRED,
+            \Stripe\Checkout\Session::STATUS_OPEN
+        ],
+        'eval' => ['mandatory' => false, 'multiple' => true, 'tl_class' => 'clr'],
+        'sql' => "blob NULL"
+    ],
+    'stripeWhitelistPaymentStatus' => [
+        'label' => &$GLOBALS['TL_LANG']['tl_iso_payment']['stripeWhitelistPaymentStatus'],
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'options' => [
+            \Stripe\Checkout\Session::PAYMENT_STATUS_UNPAID,
+            \Stripe\Checkout\Session::PAYMENT_STATUS_NO_PAYMENT_REQUIRED
+        ],
+        'eval' => ['mandatory' => false, 'multiple' => true, 'tl_class' => 'clr'],
+        'sql' => "blob NULL"
     ]
 ]);
 
@@ -27,4 +49,6 @@ PaletteManipulator::create()
     ->addLegend('gateway_legend', 'price_legend', PaletteManipulator::POSITION_BEFORE)
     ->addField('stripePrivateKey', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->addField('stripePublicKey', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
+    ->addField('stripeWhitelistStatus', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
+    ->addField('stripeWhitelistPaymentStatus', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->applyToPalette('stripe', 'tl_iso_payment');
