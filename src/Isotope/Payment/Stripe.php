@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
+use Contao\MemberModel;
 use Contao\Module;
 use Contao\StringUtil;
 use Contao\System;
@@ -43,14 +44,24 @@ class Stripe extends StripeApi
 
         try {
 
+            $enablePaymentMethodSave = false;
             $clientReferenceId = 'iso_address_' . $objOrder->getBillingAddress()->id;
+
+            $memberObject = $objOrder->getMember();
+            if ($memberObject instanceof MemberModel) {
+
+                $clientReferenceId = 'iso_member_' . $memberObject->id;
+                $enablePaymentMethodSave = true;
+
+            }
 
             [$clientSecret, $clientSession] = $this->createOrder(
                 '#' . $this->generateHash($objOrder->getId()),
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
-                $clientReferenceId
+                $clientReferenceId,
+                $enablePaymentMethodSave
             );
 
             $this->storePaymentData($objOrder, [

@@ -66,6 +66,7 @@ abstract class StripeApi extends Payment
      * @param string $currency
      * @param string $redirectUrl
      * @param string|null $clientReferenceId
+     * @param bool $enablePaymentMethodSave
      * @return array
      * @throws \Exception
      */
@@ -74,7 +75,8 @@ abstract class StripeApi extends Payment
         float   $amount,
         string  $currency,
         string  $redirectUrl,
-        ?string $clientReferenceId
+        ?string $clientReferenceId,
+        bool    $enablePaymentMethodSave
     ): array
     {
         try {
@@ -106,7 +108,9 @@ abstract class StripeApi extends Payment
 
             if (is_string($clientReferenceId) && $clientReferenceId !== '') {
 
-                $options['saved_payment_method_options'] = ['payment_method_save' => 'enabled'];
+                if ($enablePaymentMethodSave === true) {
+                    $options['saved_payment_method_options'] = ['payment_method_save' => 'enabled'];
+                }
 
                 $currentCustomerId = $this->getCustomerIdByClientReference($stripe, $clientReferenceId);
                 if ($currentCustomerId !== null) {
@@ -165,7 +169,33 @@ abstract class StripeApi extends Payment
                     array_key_exists('clientReferenceId', $metadata) &&
                     $metadata['clientReferenceId'] === $clientReferenceId
                 ) {
+
                     $update = false;
+
+                    if (
+                        array_key_exists('firstName', $metadata) &&
+                        ($customerInfo['firstName'] ?? '') !== '' &&
+                        ($customerInfo['firstName'] ?? '') !== $metadata['firstName']
+                    ) {
+                        $update = true;
+                    }
+
+                    if (
+                        array_key_exists('lastName', $metadata) &&
+                        ($customerInfo['lastName'] ?? '') !== '' &&
+                        ($customerInfo['lastName'] ?? '') !== $metadata['lastName']
+                    ) {
+                        $update = true;
+                    }
+
+                    if (
+                        array_key_exists('email', $metadata) &&
+                        ($customerInfo['email'] ?? '') !== '' &&
+                        ($customerInfo['email'] ?? '') !== $metadata['email']
+                    ) {
+                        $update = true;
+                    }
+
                 }
 
                 if ($update === true) {
