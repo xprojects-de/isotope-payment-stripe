@@ -80,7 +80,7 @@ abstract class StripeApi extends Payment
         try {
 
             if (!is_string($name) || $name === '') {
-                $name = '' . time();
+                $name = '#' . time();
             }
 
             $amountInt = (int)($amount * 100);
@@ -151,7 +151,7 @@ abstract class StripeApi extends Payment
             }
 
             $customer = $session->customer;
-            if (\is_string($customer)) {
+            if (is_string($customer)) {
                 $customer = $stripe->customers->retrieve($customer);
             }
 
@@ -161,8 +161,8 @@ abstract class StripeApi extends Payment
 
                 $metadata = $customer->metadata->toArray();
                 if (
-                    \is_array($metadata) &&
-                    \array_key_exists('clientReferenceId', $metadata) &&
+                    is_array($metadata) &&
+                    array_key_exists('clientReferenceId', $metadata) &&
                     $metadata['clientReferenceId'] === $clientReferenceId
                 ) {
                     $update = false;
@@ -216,7 +216,7 @@ abstract class StripeApi extends Payment
             $paymentStatus = $session->payment_status;
 
             $paymentIntent = $session->payment_intent;
-            if (\is_string($paymentIntent)) {
+            if (is_string($paymentIntent)) {
                 return $paymentIntent;
             }
 
@@ -258,7 +258,7 @@ abstract class StripeApi extends Payment
     protected function retrievePaymentData(IsotopeProductCollection $collection): array
     {
         $paymentData = StringUtil::deserialize($collection->payment_data, true);
-        return \array_key_exists('STRIPE_PAYMENT', $paymentData) ? $paymentData['STRIPE_PAYMENT'] : [];
+        return array_key_exists('STRIPE_PAYMENT', $paymentData) ? $paymentData['STRIPE_PAYMENT'] : [];
 
     }
 

@@ -65,12 +65,7 @@ class Stripe extends StripeApi
             $template->clientSecret = $clientSecret;
             $template->clientSession = $clientSession;
             $template->stripePublicKey = $this->stripePublicKey;
-
-            $completeUrl = Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true);
-            // $completeUrl = Url::addQueryString('iso_clientSession=' . $clientSession, $completeUrl);
-            $template->completeUrl = $completeUrl;
-
-            // $template->cancel_url = Checkout::generateUrlForStep(Checkout::STEP_FAILED, null, null, true);
+            $template->completeUrl = Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true);
 
             return $template->parse();
 
