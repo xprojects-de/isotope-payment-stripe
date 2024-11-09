@@ -100,7 +100,10 @@ class Stripe extends StripeApi
             !array_key_exists('clientSession', $paymentData) ||
             !is_string($paymentData['clientSession']) || $paymentData['clientSession'] === ''
         ) {
+
+            System::log('Product collection ID "' . $objOrder->getId() . '" is not purchasable because of invalid Stripe Session', __METHOD__, TL_ERROR);
             return false;
+
         }
 
         $clientSession = $paymentData['clientSession'];
@@ -116,6 +119,8 @@ class Stripe extends StripeApi
         if (!is_string($paymentIntent) || $paymentIntent === '') {
 
             $this->storePaymentData($objOrder, []);
+            System::log('Product collection ID "' . $objOrder->getId() . '" is not purchasable because of invalid Capture Order', __METHOD__, TL_ERROR);
+
             return false;
 
         }
