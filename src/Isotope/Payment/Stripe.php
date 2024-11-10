@@ -120,13 +120,7 @@ class Stripe extends StripeApi
         $clientSession = $paymentData['clientSession'];
         $clientReferenceId = ($paymentData['clientReferenceId'] ?? null);
 
-        $customerInfoObject = [
-            'firstName' => $objOrder->getBillingAddress()->firstname,
-            'lastName' => $objOrder->getBillingAddress()->lastname,
-            'email' => $objOrder->getBillingAddress()->email
-        ];
-
-        $paymentIntent = $this->captureOrder($clientSession, $clientReferenceId, $customerInfoObject);
+        $paymentIntent = $this->captureOrder($clientSession, $clientReferenceId, $objOrder);
         if (!is_string($paymentIntent) || $paymentIntent === '') {
 
             $this->storePaymentData($objOrder, []);

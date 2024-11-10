@@ -6,6 +6,7 @@ namespace Alpdesk\IsotopeStripe\Isotope\Payment;
 
 use Contao\StringUtil;
 use Contao\System;
+use Contao\Validator;
 use Hashids\Hashids;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Model\Payment;
@@ -138,14 +139,14 @@ abstract class StripeApi extends Payment
      * @param StripeClient $stripe
      * @param Session $session
      * @param string|null $clientReferenceId
-     * @param array|null $customerInfo
+     * @param IsotopeProductCollection $objOrder
      * @return void
      */
     private function updateCustomerInformation(
-        StripeClient $stripe,
-        Session      $session,
-        ?string      $clientReferenceId,
-        ?array       $customerInfo
+        StripeClient             $stripe,
+        Session                  $session,
+        ?string                  $clientReferenceId,
+        IsotopeProductCollection $objOrder
     ): void
     {
         try {
@@ -161,60 +162,46 @@ abstract class StripeApi extends Payment
 
             if ($customer instanceof Customer) {
 
-                $update = true;
+                $billingAddress = $objOrder->getBillingAddress();
 
-                $metadata = $customer->metadata->toArray();
+                $updateObject = [
+                    'metadata' => [
+                        'clientReferenceId' => $clientReferenceId,
+                        'email' => ($billingAddress->email ?? '')
+                    ]
+                ];
+
+                $customerName = ($billingAddress->firstname ?? '') . ' ' . ($billingAddress->lastname ?? '');
+                $updateObject['name'] = trim($customerName);
+
+                $email = ($billingAddress->email ?? '');
+                if (trim($email) !== '' && Validator::isEmail($email)) {
+                    $updateObject['email'] = trim($email);
+                }
+
                 if (
-                    is_array($metadata) &&
-                    array_key_exists('clientReferenceId', $metadata) &&
-                    $metadata['clientReferenceId'] === $clientReferenceId
+                    $billingAddress->street_1 !== null && $billingAddress->street_1 !== '' &&
+                    $billingAddress->city !== null && $billingAddress->city !== '' &&
+                    $billingAddress->postal !== null && $billingAddress->postal !== '' &&
+                    is_string($billingAddress->country) && $billingAddress->country !== ''
                 ) {
 
-                    $update = false;
-
-                    if (
-                        array_key_exists('firstName', $metadata) &&
-                        ($customerInfo['firstName'] ?? '') !== '' &&
-                        ($customerInfo['firstName'] ?? '') !== $metadata['firstName']
-                    ) {
-                        $update = true;
-                    }
-
-                    if (
-                        array_key_exists('lastName', $metadata) &&
-                        ($customerInfo['lastName'] ?? '') !== '' &&
-                        ($customerInfo['lastName'] ?? '') !== $metadata['lastName']
-                    ) {
-                        $update = true;
-                    }
-
-                    if (
-                        array_key_exists('email', $metadata) &&
-                        ($customerInfo['email'] ?? '') !== '' &&
-                        ($customerInfo['email'] ?? '') !== $metadata['email']
-                    ) {
-                        $update = true;
-                    }
+                    $updateObject['address'] = [
+                        'city' => $billingAddress->city,
+                        'country' => strtoupper($billingAddress->country),
+                        'line1' => $billingAddress->street_1,
+                        'postal_code' => $billingAddress->postal
+                    ];
 
                 }
 
-                if ($update === true) {
-
-                    StripeStripe::setApiKey($this->stripePrivateKey);
-                    Customer::update($customer->id, [
-                        'metadata' => [
-                            'clientReferenceId' => $clientReferenceId,
-                            'firstName' => ($customerInfo['firstName'] ?? ''),
-                            'lastName' => ($customerInfo['lastName'] ?? ''),
-                            'email' => ($customerInfo['email'] ?? '')
-                        ]
-                    ]);
-
-                }
+                StripeStripe::setApiKey($this->stripePrivateKey);
+                Customer::update($customer->id, $updateObject);
 
             }
 
-        } catch (\Throwable) {
+        } catch (\Throwable $tr) {
+            System::log('Product collection ID "' . $objOrder->getId() . '" update customer failed: ' . $tr->getMessage(), __METHOD__, TL_ERROR);
         }
 
     }
@@ -222,13 +209,13 @@ abstract class StripeApi extends Payment
     /**
      * @param string $clientSession
      * @param string|null $clientReferenceId
-     * @param array|null $customerInfo
+     * @param IsotopeProductCollection $objOrder
      * @return string|null
      */
     protected function captureOrder(
-        string  $clientSession,
-        ?string $clientReferenceId,
-        ?array  $customerInfo
+        string                   $clientSession,
+        ?string                  $clientReferenceId,
+        IsotopeProductCollection $objOrder
     ): ?string
     {
         try {
@@ -282,7 +269,7 @@ abstract class StripeApi extends Payment
                 throw new \Exception('invalid payment status');
             }
 
-            $this->updateCustomerInformation($stripe, $session, $clientReferenceId, $customerInfo);
+            $this->updateCustomerInformation($stripe, $session, $clientReferenceId, $objOrder);
 
             $paymentIntent = $session->payment_intent;
             if (is_string($paymentIntent)) {
