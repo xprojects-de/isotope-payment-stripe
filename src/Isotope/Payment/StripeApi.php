@@ -433,7 +433,6 @@ abstract class StripeApi extends Payment
         $info = 'Payment-Ident: ' . ($paymentIntent ?? '') . '<br>';
         $info .= 'Payment-Ident-Status: ' . $paymentIntentStatus . '<br>';
         $info .= 'Payment-Method: ' . $paymentIntentMethod . '<br>';
-        $info .= '<br>';
         $info .= 'Product-Name: ' . ($arrPayment['STRIPE_PAYMENT']['productName'] ?? '');
 
         $strBuffer .= '<div class="tl_info">' . $info . '</div>';
