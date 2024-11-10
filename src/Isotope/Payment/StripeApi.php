@@ -193,6 +193,10 @@ abstract class StripeApi extends Payment
                         'postal_code' => $billingAddress->postal
                     ];
 
+                    if (is_string($billingAddress->subdivision) && $billingAddress->subdivision !== '') {
+                        $updateObject['address']['state'] = $billingAddress->subdivision;
+                    }
+
                 }
 
                 StripeStripe::setApiKey($this->stripePrivateKey);
