@@ -55,8 +55,10 @@ class Stripe extends StripeApi
 
             }
 
+            $productName = '#' . $this->generateHash($objOrder->getId());
+
             [$clientSecret, $clientSession] = $this->createOrder(
-                '#' . $this->generateHash($objOrder->getId()),
+                $productName,
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
@@ -66,7 +68,8 @@ class Stripe extends StripeApi
 
             $this->storePaymentData($objOrder, [
                 'clientSession' => $clientSession,
-                'clientReferenceId' => $clientReferenceId
+                'clientReferenceId' => $clientReferenceId,
+                'productName' => $productName
             ]);
 
             $template = new Template('iso_payment_stripe');

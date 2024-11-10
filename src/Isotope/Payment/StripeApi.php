@@ -339,7 +339,16 @@ abstract class StripeApi extends Payment
 
         $strBuffer = '<div id="tl_buttons"></div>';
         $strBuffer .= '<h2 class="sub_headline">' . $this->name . ' (' . $GLOBALS['TL_LANG']['MODEL']['tl_iso_payment'][$this->type][0] . ')' . '</h2>';
-        $strBuffer .= '<div id="tl_soverview"><div id="tl_message"><div class="tl_info">Payment-Ident: ' . ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? '') . '</div></div></div>';
+
+        $strBuffer .= '<div id="tl_soverview">';
+        $strBuffer .= '<div id="tl_message">';
+
+        $info = 'Payment-Ident: ' . ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? '') . '<br>';
+        $info .= 'Product-Name: ' . ($arrPayment['STRIPE_PAYMENT']['productName'] ?? '');
+        $strBuffer .= '<div class="tl_info">' . $info . '</div>';
+
+        $strBuffer .= '</div>';
+        $strBuffer .= '</div>';
 
         return $strBuffer;
 
