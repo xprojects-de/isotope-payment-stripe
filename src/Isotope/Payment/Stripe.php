@@ -142,6 +142,8 @@ class Stripe extends StripeApi
 
         $objOrder->save();
 
+        $this->updateStripePaymentIdent($paymentIntent, $objOrder);
+
         return true;
 
     }

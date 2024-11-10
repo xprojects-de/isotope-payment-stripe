@@ -293,6 +293,54 @@ abstract class StripeApi extends Payment
     }
 
     /**
+     * @param string|null $paymentIntent
+     * @param IsotopeProductCollection $objOrder
+     * @return void
+     */
+    protected function updateStripePaymentIdent(
+        ?string                  $paymentIntent,
+        IsotopeProductCollection $objOrder
+    ): void
+    {
+        try {
+
+            $documentNumber = $objOrder->getDocumentNumber();
+
+            if (
+                !is_string($paymentIntent) || $paymentIntent === '' ||
+                $documentNumber === null || $documentNumber === ''
+            ) {
+                return;
+            }
+
+            $stripe = new StripeClient($this->stripePrivateKey);
+
+            $paymentIdentObject = $stripe->paymentIntents->retrieve($paymentIntent);
+
+            if (
+                $paymentIdentObject instanceof PaymentIntent &&
+                $paymentIdentObject->id === $paymentIntent
+            ) {
+
+                $updateObject = [
+                    'description' => $documentNumber,
+                    'metadata' => [
+                        'order_id' => $documentNumber
+                    ]
+                ];
+
+                StripeStripe::setApiKey($this->stripePrivateKey);
+                PaymentIntent::update($paymentIdentObject->id, $updateObject);
+
+            }
+
+        } catch (\Throwable $tr) {
+            System::log('Product collection ID "' . $objOrder->getId() . '" update paymentIdent failed: ' . $tr->getMessage(), __METHOD__, TL_ERROR);
+        }
+
+    }
+
+    /**
      * @param IsotopeProductCollection $collection
      * @param array $stripeData
      * @return void
