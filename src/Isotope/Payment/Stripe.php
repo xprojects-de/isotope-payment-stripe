@@ -55,8 +55,10 @@ class Stripe extends StripeApi
 
             }
 
+            $productName = '#' . $this->generateHash($objOrder->getId());
+
             [$clientSecret, $clientSession] = $this->createOrder(
-                '#' . $this->generateHash($objOrder->getId()),
+                $productName,
                 $objOrder->getTotal(), // number_format($order->getTotal(), 2)
                 $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
@@ -66,7 +68,8 @@ class Stripe extends StripeApi
 
             $this->storePaymentData($objOrder, [
                 'clientSession' => $clientSession,
-                'clientReferenceId' => $clientReferenceId
+                'clientReferenceId' => $clientReferenceId,
+                'productName' => $productName
             ]);
 
             $template = new Template('iso_payment_stripe');
@@ -120,13 +123,7 @@ class Stripe extends StripeApi
         $clientSession = $paymentData['clientSession'];
         $clientReferenceId = ($paymentData['clientReferenceId'] ?? null);
 
-        $customerInfoObject = [
-            'firstName' => $objOrder->getBillingAddress()->firstname,
-            'lastName' => $objOrder->getBillingAddress()->lastname,
-            'email' => $objOrder->getBillingAddress()->email
-        ];
-
-        $paymentIntent = $this->captureOrder($clientSession, $clientReferenceId, $customerInfoObject);
+        $paymentIntent = $this->captureOrder($clientSession, $clientReferenceId, $objOrder);
         if (!is_string($paymentIntent) || $paymentIntent === '') {
 
             $this->storePaymentData($objOrder, []);
@@ -144,6 +141,8 @@ class Stripe extends StripeApi
         $objOrder->updateOrderStatus($this->new_order_status);
 
         $objOrder->save();
+
+        $this->updateStripePaymentIdent($paymentIntent, $objOrder);
 
         return true;
 
