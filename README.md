@@ -19,6 +19,8 @@ To enable test mode you have to set the test keys to the key fields. For product
 
 Optional you can allow additional "Status" and "Payment-Status" next to "paid" and "complete". One reason may be if direct debit (german "Lastschrift") is used. For this Stripe always returns the status unpaid.
 
+The Stripe-Widget itself (e.g. payment methods, etc.) is configured in stripe account.
+
 ### Screenshots
 
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/1.png" width="600">
