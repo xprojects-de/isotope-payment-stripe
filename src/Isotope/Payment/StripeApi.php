@@ -14,6 +14,7 @@ use Isotope\Model\ProductCollection\Order;
 use Stripe\Checkout\Session;
 use Stripe\Customer;
 use Stripe\PaymentIntent;
+use Stripe\PaymentMethod;
 use Stripe\SearchResult;
 use Stripe\StripeClient;
 use Stripe\Stripe as StripeStripe;
@@ -389,14 +390,52 @@ abstract class StripeApi extends Payment
             return parent::backendInterface($orderId);
         }
 
+        $paymentIntent = ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? null);
+        $paymentIntentStatus = '';
+        $paymentIntentMethod = '';
+
+        if (
+            is_string($this->stripePrivateKey) && $this->stripePrivateKey !== '' &&
+            is_string($paymentIntent) && $paymentIntent !== ''
+        ) {
+
+            try {
+
+                $stripe = new StripeClient($this->stripePrivateKey);
+
+                $paymentIdentObject = $stripe->paymentIntents->retrieve($paymentIntent);
+
+                if (
+                    $paymentIdentObject instanceof PaymentIntent &&
+                    $paymentIdentObject->id === $paymentIntent
+                ) {
+
+                    $paymentIntentStatus = $paymentIdentObject->status;
+
+                    $paymentMethod = $stripe->paymentMethods->retrieve($paymentIdentObject->payment_method);
+                    if ($paymentMethod instanceof PaymentMethod) {
+                        $paymentIntentMethod = $paymentMethod->type;
+                    }
+
+                }
+
+            } catch (\Throwable) {
+            }
+
+        }
+
         $strBuffer = '<div id="tl_buttons"></div>';
         $strBuffer .= '<h2 class="sub_headline">' . $this->name . ' (' . $GLOBALS['TL_LANG']['MODEL']['tl_iso_payment'][$this->type][0] . ')' . '</h2>';
 
         $strBuffer .= '<div id="tl_soverview">';
         $strBuffer .= '<div id="tl_message">';
 
-        $info = 'Payment-Ident: ' . ($arrPayment['STRIPE_PAYMENT']['paymentIntent'] ?? '') . '<br>';
+        $info = 'Payment-Ident: ' . ($paymentIntent ?? '') . '<br>';
+        $info .= 'Payment-Ident-Status: ' . $paymentIntentStatus . '<br>';
+        $info .= 'Payment-Method: ' . $paymentIntentMethod . '<br>';
+        $info .= '<br>';
         $info .= 'Product-Name: ' . ($arrPayment['STRIPE_PAYMENT']['productName'] ?? '');
+
         $strBuffer .= '<div class="tl_info">' . $info . '</div>';
 
         $strBuffer .= '</div>';
