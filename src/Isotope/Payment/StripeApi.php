@@ -63,46 +63,27 @@ abstract class StripeApi extends Payment
     }
 
     /**
-     * @param string|null $name
-     * @param float $amount
-     * @param string $currency
      * @param string $redirectUrl
      * @param string|null $clientReferenceId
      * @param bool $enablePaymentMethodSave
+     * @param array $items
      * @return array
      * @throws \Exception
      */
     protected function createOrder(
-        ?string $name,
-        float   $amount,
-        string  $currency,
         string  $redirectUrl,
         ?string $clientReferenceId,
-        bool    $enablePaymentMethodSave
+        bool    $enablePaymentMethodSave,
+        array   $items
     ): array
     {
         try {
-
-            if (!is_string($name) || $name === '') {
-                $name = '#' . time();
-            }
-
-            $amountInt = (int)($amount * 100);
 
             $stripe = new StripeClient($this->stripePrivateKey);
 
             $options = [
                 'ui_mode' => 'embedded',
-                'line_items' => [[
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => $name,
-                        ],
-                        'unit_amount' => $amountInt,
-                    ],
-                    'quantity' => 1,
-                ]],
+                'line_items' => $items,
                 'mode' => 'payment',
                 'redirect_on_completion' => 'if_required',
                 'return_url' => $redirectUrl

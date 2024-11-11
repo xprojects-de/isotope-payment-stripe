@@ -40,6 +40,13 @@ $GLOBALS['TL_DCA']['tl_iso_payment']['fields'] = array_merge($GLOBALS['TL_DCA'][
         ],
         'eval' => ['mandatory' => false, 'multiple' => true, 'tl_class' => 'clr'],
         'sql' => "blob NULL"
+    ],
+    'stripeDetailView' => [
+        'label' => &$GLOBALS['TL_LANG']['tl_iso_payment']['stripeDetailView'],
+        'exclude' => true,
+        'inputType' => 'checkbox',
+        'eval' => array('tl_class' => 'w50 m12'),
+        'sql' => "char(1) NOT NULL default ''"
     ]
 ]);
 
@@ -49,6 +56,7 @@ PaletteManipulator::create()
     ->addLegend('gateway_legend', 'price_legend', PaletteManipulator::POSITION_BEFORE)
     ->addField('stripePrivateKey', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->addField('stripePublicKey', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
+    ->addField('stripeDetailView', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->addField('stripeWhitelistStatus', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->addField('stripeWhitelistPaymentStatus', 'gateway_legend', PaletteManipulator::POSITION_APPEND)
     ->applyToPalette('stripe', 'tl_iso_payment');
