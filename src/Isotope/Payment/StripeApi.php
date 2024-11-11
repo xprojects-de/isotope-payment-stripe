@@ -123,7 +123,14 @@ abstract class StripeApi extends Payment
                 }
 
                 if (count($discountItems) > 0) {
+
+                    // Stripe only supports one coupon
+                    if (count($discountItems) > 1) {
+                        throw new \Exception('only one item provided');
+                    }
+
                     $options['discounts'] = $discountItems;
+
                 }
 
             }

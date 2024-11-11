@@ -167,9 +167,9 @@ class Stripe extends StripeApi
 
             return $template->parse();
 
-        } catch (\Exception) {
+        } catch (\Exception $tr) {
 
-            System::log('Stripe payment failed. See stripe.log for more information.', __METHOD__, TL_ERROR);
+            System::log('Stripe payment failed. ' . $tr->getMessage(), __METHOD__, TL_ERROR);
             Checkout::redirectToStep(Checkout::STEP_FAILED);
 
         }
