@@ -93,6 +93,7 @@ abstract class StripeApi extends Payment
                 }
 
                 $lineItems[] = $item;
+
             }
 
             $options = [
