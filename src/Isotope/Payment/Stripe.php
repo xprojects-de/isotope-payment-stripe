@@ -55,15 +55,97 @@ class Stripe extends StripeApi
 
             }
 
-            $productName = '#' . $this->generateHash($objOrder->getId());
+            $items = [];
+            $discounts = [];
+
+            $productName = '-';
+
+            if ($this->stripeDetailView === '1' || $this->stripeDetailView === true) {
+
+                foreach ($objOrder->getItems() as $item) {
+
+                    $amountInt = (int)($item->getPrice() * 100);
+
+                    $label = strip_tags($item->name);
+                    if ($item->sku) {
+                        $label .= ', ' . $item->sku;
+                    }
+
+                    $row = [
+                        'price_data' => [
+                            'currency' => $objOrder->getCurrency(),
+                            'product_data' => [
+                                'name' => $label,
+                            ],
+                            'unit_amount' => $amountInt,
+                        ],
+                        'quantity' => $item->quantity,
+                    ];
+
+                    $items[] = $row;
+
+                }
+
+                foreach ($objOrder->getSurcharges() as $surcharge) {
+
+                    if (!$surcharge->addToTotal) {
+                        continue;
+                    }
+
+                    $amountInt = (int)($surcharge->total_price * 100);
+                    $label = strip_tags($surcharge->label);
+
+                    if ($amountInt < 0 && $surcharge->type === 'rule') {
+
+                        $discounts[] = [
+                            'currency' => $objOrder->getCurrency(),
+                            'duration' => 'once',
+                            'amount_off' => $amountInt * -1,
+                            'name' => $label
+                        ];
+
+                    } else {
+
+                        $items[] = [
+                            'price_data' => [
+                                'currency' => $objOrder->getCurrency(),
+                                'product_data' => [
+                                    'name' => $label,
+                                ],
+                                'unit_amount' => $amountInt,
+                            ],
+                            'quantity' => 1
+                        ];
+
+                    }
+
+                }
+
+            } else {
+
+                $productName = '#' . $this->generateHash($objOrder->getId());
+
+                $items = [
+                    [
+                        'price_data' => [
+                            'currency' => $objOrder->getCurrency(),
+                            'product_data' => [
+                                'name' => $productName,
+                            ],
+                            'unit_amount' => (int)($objOrder->getTotal() * 100),
+                        ],
+                        'quantity' => 1
+                    ]
+                ];
+
+            }
 
             [$clientSecret, $clientSession] = $this->createOrder(
-                $productName,
-                $objOrder->getTotal(), // number_format($order->getTotal(), 2)
-                $objOrder->getCurrency(),
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
                 $clientReferenceId,
-                $enablePaymentMethodSave
+                $enablePaymentMethodSave,
+                $items,
+                $discounts
             );
 
             $this->storePaymentData($objOrder, [

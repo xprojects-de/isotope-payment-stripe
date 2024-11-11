@@ -12,6 +12,7 @@ use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Model\Payment;
 use Isotope\Model\ProductCollection\Order;
 use Stripe\Checkout\Session;
+use Stripe\Coupon;
 use Stripe\Customer;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
@@ -63,50 +64,69 @@ abstract class StripeApi extends Payment
     }
 
     /**
-     * @param string|null $name
-     * @param float $amount
-     * @param string $currency
      * @param string $redirectUrl
      * @param string|null $clientReferenceId
      * @param bool $enablePaymentMethodSave
+     * @param array $items
+     * @param array $discounts
      * @return array
      * @throws \Exception
      */
     protected function createOrder(
-        ?string $name,
-        float   $amount,
-        string  $currency,
         string  $redirectUrl,
         ?string $clientReferenceId,
-        bool    $enablePaymentMethodSave
+        bool    $enablePaymentMethodSave,
+        array   $items,
+        array   $discounts
     ): array
     {
         try {
 
-            if (!is_string($name) || $name === '') {
-                $name = '#' . time();
-            }
-
-            $amountInt = (int)($amount * 100);
-
             $stripe = new StripeClient($this->stripePrivateKey);
+
+            $lineItems = [];
+
+            foreach ($items as $item) {
+
+                if ($item['price_data']['unit_amount'] < 0) {
+                    throw new \Exception('Item amount must be greater than 0');
+                }
+
+                $lineItems[] = $item;
+
+            }
 
             $options = [
                 'ui_mode' => 'embedded',
-                'line_items' => [[
-                    'price_data' => [
-                        'currency' => $currency,
-                        'product_data' => [
-                            'name' => $name,
-                        ],
-                        'unit_amount' => $amountInt,
-                    ],
-                    'quantity' => 1,
-                ]],
+                'line_items' => $lineItems,
                 'mode' => 'payment',
                 'redirect_on_completion' => 'if_required',
                 'return_url' => $redirectUrl
             ];
+
+            if (count($discounts) > 0) {
+
+                $discountItems = [];
+
+                foreach ($discounts as $discountItem) {
+
+                    if ($discountItem['amount_off'] < 0) {
+                        throw new \Exception('Discount amount must be greater than 0');
+                    }
+
+                    $coupon = $stripe->coupons->create($discountItem);
+
+                    if ($coupon instanceof Coupon) {
+                        $discountItems[] = ['coupon' => $coupon->id];
+                    }
+
+                }
+
+                if (count($discountItems) > 0) {
+                    $options['discounts'] = $discountItems;
+                }
+
+            }
 
             if (is_string($clientReferenceId) && $clientReferenceId !== '') {
 
@@ -433,7 +453,7 @@ abstract class StripeApi extends Payment
         $info = 'Payment-Ident: ' . ($paymentIntent ?? '') . '<br>';
         $info .= 'Payment-Ident-Status: ' . $paymentIntentStatus . '<br>';
         $info .= 'Payment-Method: ' . $paymentIntentMethod . '<br>';
-        $info .= 'Product-Name: ' . ($arrPayment['STRIPE_PAYMENT']['productName'] ?? '');
+        $info .= 'Product-Name: ' . ($arrPayment['STRIPE_PAYMENT']['productName'] ?? '-');
 
         $strBuffer .= '<div class="tl_info">' . $info . '</div>';
 
