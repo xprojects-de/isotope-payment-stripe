@@ -56,6 +56,7 @@ class Stripe extends StripeApi
             }
 
             $items = [];
+            $discounts = [];
 
             $productName = '-';
 
@@ -94,16 +95,29 @@ class Stripe extends StripeApi
                     $amountInt = (int)($surcharge->total_price * 100);
                     $label = strip_tags($surcharge->label);
 
-                    $items[] = [
-                        'price_data' => [
+                    if ($amountInt < 0 && $surcharge->type === 'rule') {
+
+                        $discounts[] = [
                             'currency' => $objOrder->getCurrency(),
-                            'product_data' => [
-                                'name' => $label,
+                            'duration' => 'once',
+                            'amount_off' => $amountInt * -1,
+                            'name' => $label
+                        ];
+
+                    } else {
+
+                        $items[] = [
+                            'price_data' => [
+                                'currency' => $objOrder->getCurrency(),
+                                'product_data' => [
+                                    'name' => $label,
+                                ],
+                                'unit_amount' => $amountInt,
                             ],
-                            'unit_amount' => $amountInt,
-                        ],
-                        'quantity' => 1
-                    ];
+                            'quantity' => 1
+                        ];
+
+                    }
 
                 }
 
@@ -130,7 +144,8 @@ class Stripe extends StripeApi
                 Checkout::generateUrlForStep(Checkout::STEP_COMPLETE, $objOrder, null, true),
                 $clientReferenceId,
                 $enablePaymentMethodSave,
-                $items
+                $items,
+                $discounts
             );
 
             $this->storePaymentData($objOrder, [

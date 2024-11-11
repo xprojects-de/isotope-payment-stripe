@@ -68,6 +68,7 @@ abstract class StripeApi extends Payment
      * @param string|null $clientReferenceId
      * @param bool $enablePaymentMethodSave
      * @param array $items
+     * @param array $discounts
      * @return array
      * @throws \Exception
      */
@@ -75,7 +76,8 @@ abstract class StripeApi extends Payment
         string  $redirectUrl,
         ?string $clientReferenceId,
         bool    $enablePaymentMethodSave,
-        array   $items
+        array   $items,
+        array   $discounts
     ): array
     {
         try {
@@ -83,28 +85,14 @@ abstract class StripeApi extends Payment
             $stripe = new StripeClient($this->stripePrivateKey);
 
             $lineItems = [];
-            $discountItems = [];
 
             foreach ($items as $item) {
 
-                $amount = ($item['price_data']['unit_amount'] ?? 0);
-                if (is_int($amount) && $amount < 0) {
-
-                    $coupon = $stripe->coupons->create([
-                        'currency' => $item['price_data']['currency'],
-                        'duration' => 'once',
-                        'amount_off' => $amount * -1,
-                        'name' => $item['price_data']['product_data']['name']
-                    ]);
-
-                    if ($coupon instanceof Coupon) {
-                        $discountItems[] = ['coupon' => $coupon->id];
-                    }
-
-                } else {
-                    $lineItems[] = $item;
+                if ($item['price_data']['unit_amount'] < 0) {
+                    throw new \Exception('Item amount must be greater than 0');
                 }
 
+                $lineItems[] = $item;
             }
 
             $options = [
@@ -115,8 +103,28 @@ abstract class StripeApi extends Payment
                 'return_url' => $redirectUrl
             ];
 
-            if (count($discountItems) > 0) {
-                $options['discounts'] = $discountItems;
+            if (count($discounts) > 0) {
+
+                $discountItems = [];
+
+                foreach ($discounts as $discountItem) {
+
+                    if ($discountItem['amount_off'] < 0) {
+                        throw new \Exception('Discount amount must be greater than 0');
+                    }
+
+                    $coupon = $stripe->coupons->create($discountItem);
+
+                    if ($coupon instanceof Coupon) {
+                        $discountItems[] = ['coupon' => $coupon->id];
+                    }
+
+                }
+
+                if (count($discountItems) > 0) {
+                    $options['discounts'] = $discountItems;
+                }
+
             }
 
             if (is_string($clientReferenceId) && $clientReferenceId !== '') {
