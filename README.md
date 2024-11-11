@@ -38,7 +38,6 @@ The Stripe-Widget itself (e.g. payment methods, etc.) is configured in stripe ac
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/3.png" width="600">
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/4.png" width="600">
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/5.png" width="600">
-<img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/6.png" width="600">
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/9.png" width="600">
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/10.png" width="600">
 <img src="https://raw.githubusercontent.com/xprojects-de/isotope-payment-stripe/refs/heads/main/tests/docs/11.png" width="600">
