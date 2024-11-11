@@ -56,8 +56,7 @@ class Stripe extends StripeApi
             }
 
             $items = [];
-
-            $productName = '#' . $this->generateHash($objOrder->getId());
+            $productName = '-';
 
             if ($this->stripeDetailView === '1' || $this->stripeDetailView === true) {
 
@@ -108,6 +107,8 @@ class Stripe extends StripeApi
                 }
 
             } else {
+
+                $productName = '#' . $this->generateHash($objOrder->getId());
 
                 $items = [
                     [

@@ -14,10 +14,14 @@ In the payment module, you have to configure the following setting:
 
 * public Key
 * private Key
+* stripeDetailView
 
 To enable test mode you have to set the test keys to the key fields. For production use the production keys.
 
-Optional you can allow additional "Status" and "Payment-Status" next to "paid" and "complete". One reason may be if direct debit (german "Lastschrift") is used. For this Stripe always returns the status unpaid.
+The option "detail Productview (stripeDetailView)" shows the products in detail.
+
+Optional you can allow additional "Status" and "Payment-Status" next to "paid" and "complete". One reason may be if
+direct debit (german "Lastschrift") is used. For this Stripe always returns the status unpaid.
 
 The Stripe-Widget itself (e.g. payment methods, etc.) is configured in stripe account.
 
