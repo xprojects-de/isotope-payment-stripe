@@ -56,6 +56,7 @@ class Stripe extends StripeApi
             }
 
             $items = [];
+
             $productName = '-';
 
             if ($this->stripeDetailView === '1' || $this->stripeDetailView === true) {

@@ -12,6 +12,7 @@ use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Model\Payment;
 use Isotope\Model\ProductCollection\Order;
 use Stripe\Checkout\Session;
+use Stripe\Coupon;
 use Stripe\Customer;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
@@ -81,13 +82,42 @@ abstract class StripeApi extends Payment
 
             $stripe = new StripeClient($this->stripePrivateKey);
 
+            $lineItems = [];
+            $discountItems = [];
+
+            foreach ($items as $item) {
+
+                $amount = ($item['price_data']['unit_amount'] ?? 0);
+                if (is_int($amount) && $amount < 0) {
+
+                    $coupon = $stripe->coupons->create([
+                        'currency' => $item['price_data']['currency'],
+                        'duration' => 'once',
+                        'amount_off' => $amount * -1,
+                        'name' => $item['price_data']['product_data']['name']
+                    ]);
+
+                    if ($coupon instanceof Coupon) {
+                        $discountItems[] = ['coupon' => $coupon->id];
+                    }
+
+                } else {
+                    $lineItems[] = $item;
+                }
+
+            }
+
             $options = [
                 'ui_mode' => 'embedded',
-                'line_items' => $items,
+                'line_items' => $lineItems,
                 'mode' => 'payment',
                 'redirect_on_completion' => 'if_required',
                 'return_url' => $redirectUrl
             ];
+
+            if (count($discountItems) > 0) {
+                $options['discounts'] = $discountItems;
+            }
 
             if (is_string($clientReferenceId) && $clientReferenceId !== '') {
 
