@@ -125,6 +125,7 @@ class Stripe extends StripeApi
             } else {
 
                 $productName = '#' . $this->generateHash($objOrder->getId());
+                $amountInt = $this->formatAmount($objOrder->getTotal(), false);
 
                 $items = [
                     [
@@ -133,7 +134,7 @@ class Stripe extends StripeApi
                             'product_data' => [
                                 'name' => $productName,
                             ],
-                            'unit_amount' => (int)($objOrder->getTotal() * 100),
+                            'unit_amount' => $amountInt,
                         ],
                         'quantity' => 1
                     ]
