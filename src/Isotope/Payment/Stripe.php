@@ -64,7 +64,7 @@ class Stripe extends StripeApi
 
                 foreach ($objOrder->getItems() as $item) {
 
-                    $amountInt = (int)($item->getPrice() * 100);
+                    $amountInt = $this->formatAmount($item->getPrice(), false);
 
                     $label = strip_tags($item->name);
                     if ($item->sku) {
@@ -92,7 +92,8 @@ class Stripe extends StripeApi
                         continue;
                     }
 
-                    $amountInt = (int)($surcharge->total_price * 100);
+                    $amountInt = $this->formatAmount($surcharge->total_price, false);
+
                     $label = strip_tags($surcharge->label);
 
                     if ($amountInt < 0 && $surcharge->type === 'rule') {
@@ -124,6 +125,7 @@ class Stripe extends StripeApi
             } else {
 
                 $productName = '#' . $this->generateHash($objOrder->getId());
+                $amountInt = $this->formatAmount($objOrder->getTotal(), false);
 
                 $items = [
                     [
@@ -132,7 +134,7 @@ class Stripe extends StripeApi
                             'product_data' => [
                                 'name' => $productName,
                             ],
-                            'unit_amount' => (int)($objOrder->getTotal() * 100),
+                            'unit_amount' => $amountInt,
                         ],
                         'quantity' => 1
                     ]
@@ -228,6 +230,11 @@ class Stripe extends StripeApi
 
         return true;
 
+    }
+
+    private function formatAmount($price, $applyRoundingIncrement = true): int
+    {
+        return (int)round(Isotope::roundPrice($price, $applyRoundingIncrement) * 100);
     }
 
 }
